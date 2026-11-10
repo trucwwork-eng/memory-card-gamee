@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Little Matches — Memory Game</title>
+  <style>
+    :root {
+      --ink: #1d1d1d;
+      --muted: #777777;
+      --mint: #6EE3B7;
+      --lavender: #A4A9FD;
+      --pink: #EACEE5;
+      --yellow: #FFF073;
+      --orange: #ff825e;
+      --cream: #fff9eb;
+      --white: #ffffff;
+      --radius: 24px;
+      --shadow: 0 14px 35px rgba(38, 28, 18, .075);
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--white);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; }
+    .page {
+      width: min(100% - 40px, 760px);
+      margin: 0 auto;
+      padding: clamp(40px, 7vw, 76px) 0 48px;
+    }
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: clamp(44px, 8vw, 70px);
+    }
+    .brand {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: -.045em;
+      text-transform: uppercase;
+    }
+    .brand-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 29px;
+      height: 29px;
+      margin-right: 7px;
+      background: var(--yellow);
+      border-radius: 9px;
+      transform: rotate(-11deg);
+      font-size: 17px;
+      vertical-align: middle;
+    }
+    .edition {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .intro { text-align: center; }
+    .eyebrow {
+      display: inline-block;
+      padding: 8px 13px;
+      border-radius: 30px;
+      background: var(--cream);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: clamp(49px, 9vw, 78px);
+      line-height: .99;
+      letter-spacing: -.085em;
+      margin: 19px 0 16px;
+      font-weight: 800;
+    }
+    h1 span { color: var(--orange); }
+    .subtitle {
+      margin: 0 auto;
+      color: #747474;
+      font-size: clamp(14px, 2.3vw, 16px);
+      line-height: 1.55;
+    }
+    .stats {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 42px 0 18px;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 112px;
+      padding: 13px 18px;
+      border: 1px solid #f0ede8;
+      border-radius: 17px;
+      background: #fff;
+    }
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .stat-value { font-size: 25px; font-weight: 800; letter-spacing: -.06em; margin-top: 3px; }
+    .tip {
+      align-self: center;
+      font-size: 12px;
+      color: #848484;
+      text-align: center;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(10px, 2.1vw, 17px);
+      perspective: 1200px;
+    }
+    .card {
+      position: relative;
+      aspect-ratio: 0.86;
+      border: 0;
+      padding: 0;
+      border-radius: var(--radius);
+      background: transparent;
+      cursor: pointer;
+      perspective: 1000px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .card:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      transform-style: preserve-3d;
+      transition: transform .55s cubic-bezier(.2,.7,.2,1);
+    }
+    .card.is-flipped .card-inner { transform: rotateY(180deg); }
+    .card-side {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: inherit;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-back { background: var(--back); }
+    .card-back::before {
+      content: "";
+      width: 54%;
+      aspect-ratio: 1;
+      border: clamp(5px, .9vw, 9px) solid rgba(255,255,255,.68);
+      border-radius: 30%;
+      transform: rotate(-17deg);
+    }
+    .card-back::after {
+      content: "✳";
+      position: absolute;
+      color: var(--ink);
+      font-size: clamp(45px, 10vw, 92px);
+      font-weight: 400;
+      transform: rotate(-16deg);
+    }
+    .card:nth-child(2) .card-back::after,
+    .card:nth-child(5) .card-back::after { content: "✦"; }
+    .card:nth-child(3) .card-back::after,
+    .card:nth-child(6) .card-back::after { content: "✿"; }
+    .card-front {
+      transform: rotateY(180deg);
+      background: var(--cream);
+      border: 1px solid #f5eee3;
+    }
+    .illustration { width: 74%; max-height: 78%; overflow: visible; filter: drop-shadow(0 11px 6px rgba(28, 23, 25, .045)); }
+    .card.is-matched { cursor: default; }
+    .card.is-matched .card-front { background: #f5fff9; border-color: #daf3e7; }
+    .card.is-matched .card-front::after {
+      content: "✓";
+      display: grid;
+      place-items: center;
+      position: absolute;
+      top: 13px;
+      right: 13px;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: var(--mint);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .bottom { text-align: center; margin-top: 28px; }
+    .progress {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+    .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: #e8e8e8; transition: background .25s, transform .25s; }
+    .progress-dot.active { background: var(--orange); transform: scale(1.25); }
+    .restart {
+      background: var(--ink);
+      color: white;
+      border: 0;
+      border-radius: 17px;
+      padding: 16px 36px;
+      min-height: 54px;
+      font-size: 14px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform .2s, background .2s;
+    }
+    .restart:hover { background: #383838; transform: translateY(-2px); }
+    .restart:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
+    .win {
+      margin: 0 auto 20px;
+      padding: 21px;
+      background: var(--yellow);
+      border-radius: 20px;
+      max-width: 420px;
+      animation: pop .35s ease both;
+    }
+    .win-title { margin: 0 0 5px; font-weight: 850; font-size: 25px; letter-spacing: -.055em; }
+    .win-copy { margin: 0; font-size: 14px; line-height: 1.5; }
+    [hidden] { display: none !important; }
+    @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @media (max-width: 520px) {
+      .page { width: min(100% - 28px, 430px); padding-top: 28px; }
+      .topline { margin-bottom: 44px; }
+      .stats { margin-top: 32px; }
+      .stat { min-width: 87px; padding: 12px; }
+      .stat-value { font-size: 22px; }
+      .tip { font-size: 11px; max-width: 110px; }
+      .card { border-radius: 17px; }
+      .card.is-matched .card-front::after { top: 7px; right: 7px; width: 19px; height: 19px; font-size: 11px; }
+      .card-back::before { border-width: 5px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topline">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span> little matches</div>
+      <span class="edition">A tiny brain break · 01</span>
+    </header>
+
+    <section class="intro" aria-labelledby="game-title">
+      <span class="eyebrow">The mini memory game</span>
+      <h1 id="game-title">Make a <span>match.</span></h1>
+      <p class="subtitle">Six little cards. Three perfect pairs.<br />Flip, remember, and find them all.</p>
+    </section>
+
+    <section aria-label="Memory game">
+      <div class="stats">
+        <div class="stat" aria-live="polite"><span class="stat-label">Moves</span><span class="stat-value" id="moves">0</span></div>
+        <p class="tip">Flip any two cards to find a pair ✳</p>
+        <div class="stat" aria-live="polite"><span class="stat-label">Matched</span><span class="stat-value" id="matched">0 / 3</span></div>
+      </div>
+      <div class="board" id="board" aria-label="Six face-down memory cards"></div>
+      <div class="bottom">
+        <div class="progress" id="progress" aria-label="0 of 3 pairs matched">
+          <span class="progress-dot"></span><span class="progress-dot"></span><span class="progress-dot"></span>
+        </div>
+        <div class="win" id="win" role="status" aria-live="polite" hidden>
+          <p class="win-title">Perfect match! ✳</p>
+          <p class="win-copy" id="win-copy">You found all three pairs.</p>
+        </div>
+        <button class="restart" id="restart" type="button">↻ &nbsp; Restart game</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // Three original, self-contained SVG illustrations — no image downloads required.
+    const art = {
+      dice: `<svg class="illustration" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M28 46 82 17l54 29-54 30Z" fill="#fff3e6"/>
+        <path d="M28 46 82 76v64l-54-31Z" fill="#e2a2ed"/>
+        <path d="M82 76 136 46v63l-54 31Z" fill="#326cf2"/>
+        <ellipse cx="82" cy="44" rx="13" ry="9" fill="#ff641e"/>
+        <g fill="#1d1d1d"><ellipse cx="45" cy="72" rx="7" ry="10" transform="rotate(-30 45 72)"/><ellipse cx="63" cy="91" rx="7" ry="10" transform="rotate(-30 63 91)"/><ellipse cx="45" cy="106" rx="7" ry="10" transform="rotate(-30 45 106)"/></g>
+        <g fill="#fff4df"><ellipse cx="108" cy="85" rx="7" ry="10" transform="rotate(25 108 85)"/><ellipse cx="120" cy="109" rx="7" ry="10" transform="rotate(25 120 109)"/></g>
+      </svg>`,
+      egg: `<svg class="illustration" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M33 111c-7 5-7 17 4 21 16 6 70 7 89 1 13-4 13-16 1-22-14-7-78-7-94 0Z" fill="#f8efd9"/>
+        <path d="M76 84 64 68l10-15-12-15 10-22C49 12 23 29 22 59c0 26 18 41 43 42Z" fill="#ffe8ca"/>
+        <path d="m90 85 11-17-11-16 12-16-8-19c25-5 45 17 45 44 0 27-18 40-43 41Z" fill="#ffe8ca"/>
+        <path d="m72 16-10 22 12 15-10 15 12 16-11 17 17-16-9-18 13-14-11-15 11-19Z" fill="#cfa67b"/>
+        <path d="m94 17 8 19-12 16 11 16-11 17 6 17-15-17 8-18-13-15 12-15-10-17Z" fill="#cfa67b"/>
+        <ellipse cx="80" cy="115" rx="27" ry="21" fill="#ffca26"/>
+        <path d="M86 102c8 1 12 5 14 11" fill="none" stroke="#fff8dd" stroke-width="6" stroke-linecap="round"/>
+      </svg>`,
+      paint: `<svg class="illustration" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M40 42c-16 0-22 14-22 29s7 31 24 31h52c9 0 16-7 16-15V57c0-8-7-15-16-15Z" fill="#84b9ff"/>
+        <path d="M41 42h52c12 0 19 13 19 30s-7 30-19 30H41c-11 0-17-13-17-30s6-30 17-30Z" fill="#a9ceff"/>
+        <path d="M37 80c20-4 39-7 72 1-2 15-7 21-16 21H42c-10 0-15-8-17-17Z" fill="#1976ff"/>
+        <ellipse cx="101" cy="72" rx="13" ry="30" fill="#478ff2"/>
+        <ellipse cx="98" cy="72" rx="9" ry="25" fill="#8abaff"/>
+        <path d="M103 88c8 9 24 11 30 18 5 6 0 11-8 12 16-1 22 5 15 12-6 7-16 5-28 4-12-1-20 6-35 0-10-4-8-14 0-18 8-5 22-8 26-17Z" fill="#1976ff"/>
+        <path d="M50 53 84 47" stroke="#eef7ff" stroke-width="6" stroke-linecap="round"/>
+        <ellipse cx="114" cy="122" rx="6" ry="3" fill="#e8f5ff" transform="rotate(25 114 122)"/>
+        <ellipse cx="146" cy="116" rx="5" ry="3" fill="#1976ff"/>
+      </svg>`
+    };
+
+    const types = ["dice", "egg", "paint"];
+    const colors = ["#6EE3B7", "#A4A9FD", "#EACEE5", "#FFF073", "#A4A9FD", "#6EE3B7"];
+    const board = document.getElementById("board");
+    const movesEl = document.getElementById("moves");
+    const matchedEl = document.getElementById("matched");
+    const progressEl = document.getElementById("progress");
+    const winEl = document.getElementById("win");
+    const winCopyEl = document.getElementById("win-copy");
+    const restartButton = document.getElementById("restart");
+
+    let firstCard = null;
+    let secondCard = null;
+    let locked = false;
+    let moves = 0;
+    let matches = 0;
+    let flipBackTimer = null;
+
+    function shuffledCards() {
+      const cards = [...types, ...types];
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      return cards;
+    }
+
+    function updateStats() {
+      movesEl.textContent = String(moves);
+      matchedEl.textContent = `${matches} / ${types.length}`;
+      progressEl.setAttribute("aria-label", `${matches} of ${types.length} pairs matched`);
+      [...progressEl.children].forEach((dot, index) => {
+        dot.classList.toggle("active", index < matches);
+      });
+    }
+
+    function clearSelection() {
+      firstCard = null;
+      secondCard = null;
+      locked = false;
+    }
+
+    function flip(card) {
+      if (locked || card === firstCard || card.classList.contains("is-matched") || card.classList.contains("is-flipped")) return;
+      card.classList.add("is-flipped");
+      card.setAttribute("aria-label", `Card ${card.dataset.position}: ${card.dataset.type}`);
+      card.setAttribute("aria-pressed", "true");
+
+      if (!firstCard) {
+        firstCard = card;
+        return;
+      }
+
+      secondCard = card;
+      moves++;
+      updateStats();
+      locked = true;
+
+      if (firstCard.dataset.type === secondCard.dataset.type) {
+        firstCard.classList.add("is-matched");
+        secondCard.classList.add("is-matched");
+        firstCard.disabled = true;
+        secondCard.disabled = true;
+        matches++;
+        updateStats();
+        clearSelection();
+        if (matches === types.length) {
+          winCopyEl.textContent = `You found all three pairs in ${moves} ${moves === 1 ? "move" : "moves"}. Play again?`;
+          winEl.hidden = false;
+        }
+      } else {
+        flipBackTimer = window.setTimeout(() => {
+          for (const selected of [firstCard, secondCard]) {
+            selected.classList.remove("is-flipped");
+            selected.setAttribute("aria-label", `Card ${selected.dataset.position}: face down`);
+            selected.setAttribute("aria-pressed", "false");
+          }
+          clearSelection();
+          flipBackTimer = null;
+        }, 900);
+      }
+    }
+
+    function startGame() {
+      if (flipBackTimer !== null) {
+        window.clearTimeout(flipBackTimer);
+        flipBackTimer = null;
+      }
+      clearSelection();
+      moves = 0;
+      matches = 0;
+      winEl.hidden = true;
+      updateStats();
+      board.replaceChildren();
+
+      shuffledCards().forEach((type, index) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "card";
+        card.dataset.type = type;
+        card.dataset.position = String(index + 1);
+        card.style.setProperty("--back", colors[index]);
+        card.setAttribute("aria-label", `Card ${index + 1}: face down`);
+        card.setAttribute("aria-pressed", "false");
+        card.innerHTML = `<span class="card-inner"><span class="card-side card-back" aria-hidden="true"></span><span class="card-side card-front" aria-hidden="true">${art[type]}</span></span>`;
+        card.addEventListener("click", () => flip(card));
+        board.append(card);
+      });
+    }
+
+    restartButton.addEventListener("click", startGame);
+    startGame();
+  </script>
+</body>
+</html>
